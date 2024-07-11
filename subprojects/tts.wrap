@@ -1,0 +1,8 @@
+[wrap-git]
+directory = tts
+url = https://github.com/ydalton/tts.git
+revision = head
+depth = 1
+
+[provide]
+program_names = tts

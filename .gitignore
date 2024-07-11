@@ -1,0 +1,7 @@
+/.cache
+
+/subprojects/cglm/
+/subprojects/tts/
+
+/src/vendor/
+/include/vendor/

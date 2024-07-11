@@ -1,0 +1,5 @@
+[wrap-git]
+directory = cglm
+url = https://github.com/recp/cglm.git
+revision = head
+depth = 1
