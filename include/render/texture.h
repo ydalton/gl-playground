@@ -3,15 +3,15 @@
 
 #include <stddef.h>
 
-struct _Texture {
+struct TexturePrivate;
+
+typedef struct {
 	int width;
 	int height;
 	int bpp;
 
-	void *priv;
-};
-
-typedef struct _Texture Texture;
+	struct TexturePrivate *priv;
+} Texture;
 
 Texture *texture_alloc(void);
 void texture_set_data(Texture *texture, const unsigned char *data, size_t length);

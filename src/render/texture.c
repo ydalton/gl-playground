@@ -18,19 +18,15 @@ static inline struct TexturePrivate *get_private(Texture *texture)
 Texture *texture_alloc(void)
 {
 	Texture *texture;
-	struct TexturePrivate *priv;
 	
 	texture = calloc(1, sizeof(*texture));
-	priv = get_private(texture);
-	priv = calloc(1, sizeof(*priv));
-	texture->priv = priv;
+	texture->priv = calloc(1, sizeof(struct TexturePrivate));
 	
 	return texture;
 }
 
 void texture_set_data(Texture *texture, const unsigned char *data, size_t length)
 {
-	struct TexturePrivate *priv = get_private(texture);
 	int channels;
 	unsigned char *buffer;
 
@@ -46,7 +42,7 @@ void texture_set_data(Texture *texture, const unsigned char *data, size_t length
 		return;
 	}
 
-	glGenTextures(1, &priv->render_ID);
+	glGenTextures(1, &texture->priv->render_ID);
 
 	texture_bind(texture);
 
@@ -63,8 +59,7 @@ void texture_set_data(Texture *texture, const unsigned char *data, size_t length
 
 void texture_bind(Texture *texture)
 {
-	struct TexturePrivate *priv = get_private(texture);
-	glBindTexture(GL_TEXTURE_2D, priv->render_ID);
+	glBindTexture(GL_TEXTURE_2D, texture->priv->render_ID);
 }
 
 void texture_unbind(void)
@@ -74,8 +69,7 @@ void texture_unbind(void)
 
 void texture_free(Texture *texture)
 {
-	struct TexturePrivate *priv = get_private(texture);
-	glDeleteTextures(1, &priv->render_ID);
+	glDeleteTextures(1, &texture->priv->render_ID);
 	free(texture->priv);
 	free(texture);
 }

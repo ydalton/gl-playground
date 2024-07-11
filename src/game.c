@@ -17,7 +17,7 @@
 #include "frag.glsl.h"
 #include "bowser.png.h"
 
-struct GamePrivateData {
+struct GamePrivate{
 	SDL_Window *window;
 	SDL_GLContext context;
 	int running;
@@ -30,23 +30,14 @@ struct Player {
 
 Game *game_alloc(void)
 {
-	Game *ret = calloc(1, sizeof(Game));
-	assert(ret);
-	ret->priv = calloc(1, sizeof(struct GamePrivateData));
-	assert(ret->priv);
+	Game *ret = calloc(1, sizeof(*ret));
+	ret->priv = calloc(1, sizeof(struct GamePrivate));
 	return ret;
-}
-
-static struct GamePrivateData *get_private(Game *game)
-{
-	return game->priv;
 }
 
 static void game_init(Game *game)
 {
-	struct GamePrivateData *priv = get_private(game);
-
-	priv->running = TRUE;
+	game->priv->running = TRUE;
 
 	SDL_Init(0);
 
@@ -85,16 +76,15 @@ static void update_camera_rotation(float xoffset, float yoffset)
 
 static void handle_events(Game *game)
 {
-	struct GamePrivateData *priv = get_private(game);
 	SDL_Event ev;
 	while(SDL_PollEvent(&ev)) {
 		switch(ev.type) {
 		case SDL_QUIT:
-			priv->running = FALSE;
+			game->priv->running = FALSE;
 			break;
 		case SDL_KEYDOWN:
 			if(ev.key.keysym.sym == 'q') {
-				priv->running = FALSE;
+				game->priv->running = FALSE;
 			}
 			break;
 		case SDL_MOUSEMOTION:
@@ -148,7 +138,6 @@ struct {
 
 static void init_gl(Game *game)
 {
-	struct GamePrivateData *priv = get_private(game);
 	float verts[] = {
 		/* vertex		tex coords  normals */
 		-1.0f, -1.0f, -1.0f,	0.0f, 0.0f,	0.0, 0.0, -1.0,
@@ -193,7 +182,7 @@ static void init_gl(Game *game)
 		-1.0f,  1.0f,  1.0f,	0.0f, 0.0f,	0.0, 1.0, 0.0,
 		-1.0f,  1.0f, -1.0f,	0.0f, 1.0f,	0.0, 1.0, 0.0,
 	};
-	priv->context = SDL_GL_CreateContext(priv->window);
+	game->priv->context = SDL_GL_CreateContext(game->priv->window);
 
 	assert(gladLoadGLLoader((GLADloadproc) SDL_GL_GetProcAddress));
 
@@ -220,19 +209,17 @@ static void init_gl(Game *game)
 
 int game_run(Game *game)
 {
-	struct GamePrivateData *priv;
 	vec3 tmp;
 
-	priv = get_private(game);
 	game_init(game);
 
-	priv->window = SDL_CreateWindow("Game",
+	game->priv->window = SDL_CreateWindow("Game",
 					SDL_WINDOWPOS_UNDEFINED,
 					SDL_WINDOWPOS_UNDEFINED,
 					game->width,
 					game->height,
 					SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI);
-	assert(priv->window != NULL);
+	assert(game->priv->window != NULL);
 
 	SDL_SetRelativeMouseMode(SDL_TRUE);
 
@@ -242,19 +229,19 @@ int game_run(Game *game)
 	texture_set_data(texture, bowser_png, sizeof(bowser_png));
 	texture_bind(texture);
 
-	while(priv->running) {
+	while(game->priv->running) {
 		handle_events(game);
 		glClear(GL_COLOR_BUFFER_BIT);
 		glm_vec3_add(p.camera_pos, p.camera_front, tmp);
 		glm_lookat(p.camera_pos, tmp, p.camera_up, view);
 		shader_set_mat4(shader, "view", (float *) view);
 		render_object_draw(triangle);
-		SDL_GL_SwapWindow(priv->window);
+		SDL_GL_SwapWindow(game->priv->window);
 	}
 
 	render_object_free(triangle);
-	SDL_GL_DeleteContext(priv->context);
-	SDL_DestroyWindow(priv->window);
+	SDL_GL_DeleteContext(game->priv->context);
+	SDL_DestroyWindow(game->priv->window);
 	SDL_Quit();
 
 	return 0;

@@ -3,12 +3,12 @@
 
 #include <stddef.h>
 
-struct IndexBuffer_ {
-	unsigned int count;
-	void *priv;
-};
+struct IndexBufferPrivate;
 
-typedef struct IndexBuffer_ IndexBuffer;
+typedef struct {
+	unsigned int count;
+	struct IndexBufferPrivate *priv;
+} IndexBuffer;
 
 IndexBuffer *index_buffer_alloc(void);
 void index_buffer_init(IndexBuffer *buffer, 

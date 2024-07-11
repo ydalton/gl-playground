@@ -7,22 +7,14 @@ struct IndexBufferPrivate {
 	unsigned int render_ID;
 };
 
-static struct IndexBufferPrivate *get_private(IndexBuffer *buffer)
-{
-	return buffer->priv;
-}
-
 IndexBuffer *index_buffer_alloc(void)
 {
 	IndexBuffer *buf; 
-	struct IndexBufferPrivate *priv;
 
 	buf = calloc(1, sizeof(*buf));
 	buf->priv = calloc(1, sizeof(struct IndexBufferPrivate));
 
-	priv = buf->priv;
-
-	glGenBuffers(1, &priv->render_ID);
+	glGenBuffers(1, &buf->priv->render_ID);
 
 	return buf;
 
@@ -42,9 +34,7 @@ void index_buffer_init(IndexBuffer *buffer,
 
 void index_buffer_bind(IndexBuffer *buffer)
 {
-	struct IndexBufferPrivate *priv = get_private(buffer);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, priv->render_ID);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer->priv->render_ID);
 }
 void index_buffer_unbind(void)
 {
@@ -53,9 +43,7 @@ void index_buffer_unbind(void)
 
 void index_buffer_free(IndexBuffer *buffer)
 {
-	struct IndexBufferPrivate *priv = get_private(buffer);
-
-	glDeleteBuffers(1, &priv->render_ID);
+	glDeleteBuffers(1, &buffer->priv->render_ID);
 
 	free(buffer->priv);
 	free(buffer);
