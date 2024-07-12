@@ -4,17 +4,14 @@
 #define TRUE	1
 #define FALSE	0
 
-struct GamePrivate;
-
 typedef struct {
 	const char *name;
 	unsigned int width;
 	unsigned int height;
-	struct GamePrivate *priv;
-} Game;
 
-Game *game_alloc(void);
-int game_run(Game *game);
-void game_free(Game *game);
+	void (*init_func)(void);
+} GameInfo;
+
+int game_run(GameInfo *game_info);
 
 #endif /* __GAME_H_ */

@@ -7,37 +7,39 @@
 #include <cglm/cglm.h>
 
 #include "glad/glad.h"
-#include "game.h"
 
+#include "core/game.h"
+#include "render/renderer.h"
 #include "render/render-object.h"
 #include "render/texture.h"
 #include "render/shader.h"
 
 #include "vert.glsl.h"
 #include "frag.glsl.h"
-#include "bowser.png.h"
 
-struct GamePrivate{
+#include "bowser.png.h"
+#include "checkertile.png.h"
+
+static struct {
+	const char *name;
+	int width, height;
 	SDL_Window *window;
 	SDL_GLContext context;
 	int running;
-};
+} game_instance;
 
 struct Player {
 	vec3 camera_pos, camera_front, camera_up;
 	float pitch, yaw, camera_speed;
 } p = {0};
 
-Game *game_alloc(void)
+static void game_init(GameInfo *game_info)
 {
-	Game *ret = calloc(1, sizeof(*ret));
-	ret->priv = calloc(1, sizeof(struct GamePrivate));
-	return ret;
-}
+	game_instance.width = game_info->width;
+	game_instance.height = game_info->height;
+	game_instance.name = game_info->name;
 
-static void game_init(Game *game)
-{
-	game->priv->running = TRUE;
+	game_instance.running = TRUE;
 
 	SDL_Init(0);
 
@@ -74,17 +76,17 @@ static void update_camera_rotation(float xoffset, float yoffset)
 	glm_vec3_copy(normalized, p.camera_front);
 }
 
-static void handle_events(Game *game)
+static void handle_events(void)
 {
 	SDL_Event ev;
 	while(SDL_PollEvent(&ev)) {
 		switch(ev.type) {
 		case SDL_QUIT:
-			game->priv->running = FALSE;
+			game_instance.running = FALSE;
 			break;
 		case SDL_KEYDOWN:
 			if(ev.key.keysym.sym == 'q') {
-				game->priv->running = FALSE;
+				game_instance.running = FALSE;
 			}
 			break;
 		case SDL_MOUSEMOTION:
@@ -126,17 +128,17 @@ static void handle_events(Game *game)
 	}
 }
 
-RenderObject *triangle;
+RenderObject *cube;
+RenderObject *floor_obj;
 Shader *shader;
 mat4 projection = GLM_MAT4_IDENTITY_INIT,
-     view = GLM_MAT4_IDENTITY_INIT,
-     model = GLM_MAT4_IDENTITY_INIT;
+     view = GLM_MAT4_IDENTITY_INIT;
 
 struct {
 	GLuint frag, vert, prog;
 } ogl;
 
-static void init_gl(Game *game)
+static void init_gl()
 {
 	float verts[] = {
 		/* vertex		tex coords  normals */
@@ -182,17 +184,35 @@ static void init_gl(Game *game)
 		-1.0f,  1.0f,  1.0f,	0.0f, 0.0f,	0.0, 1.0, 0.0,
 		-1.0f,  1.0f, -1.0f,	0.0f, 1.0f,	0.0, 1.0, 0.0,
 	};
-	game->priv->context = SDL_GL_CreateContext(game->priv->window);
+
+	float floor_verts[] = {
+		-1.0, -1.0, -1.0,	0.0, 16.0,	0.0, 1.0, 0.0,
+		1.0, -1.0, -1.0,	16.0, 16.0,	0.0, 1.0, 0.0,
+		1.0, -1.0,  1.0,	16.0, 0.0,	0.0, 1.0, 0.0,
+		1.0, -1.0,  1.0,	16.0, 0.0,	0.0, 1.0, 0.0,
+		-1.0, -1.0,  1.0,	0.0, 0.0,	0.0, 1.0, 0.0,
+		-1.0, -1.0, -1.0,	0.0, 16.0,	0.0, 1.0, 0.0,
+	};
+
+	game_instance.context = SDL_GL_CreateContext(game_instance.window);
 
 	assert(gladLoadGLLoader((GLADloadproc) SDL_GL_GetProcAddress));
 
-	triangle = render_object_alloc();
-	render_object_set_vertex_data(triangle, verts, sizeof(verts), 8*sizeof(float));
+	renderer_create();
+
+	cube = render_object_alloc();
+	render_object_set_vertex_data(cube, verts, sizeof(verts), 8*sizeof(float));
+
+	floor_obj = render_object_alloc();
+	render_object_set_vertex_data(floor_obj,
+				      floor_verts,
+				      sizeof(floor_verts),
+				      8 * sizeof(float));
 
 	shader = shader_alloc();
 	shader_set_data(shader, vert_glsl, frag_glsl);
 
-	glm_perspective(glm_rad(45), 1000.0/800.0, 0.1, 100, projection);
+	glm_perspective(glm_rad(45.0), 1000.0/800.0, 0.1, 100, projection);
 
 	glm_vec3_copy((vec3){0.0, 0.5, 6.0}, p.camera_pos);
 	glm_vec3_copy((vec3){0.0, 0.0, -1.0}, p.camera_front);
@@ -200,55 +220,60 @@ static void init_gl(Game *game)
 
 	shader_bind(shader);
 	shader_set_mat4(shader, "projection", (float *) projection);
-	shader_set_mat4(shader, "view", (float *) view);
-	shader_set_mat4(shader, "model", (float *) model);
 
 	glEnable(GL_DEPTH_TEST);
 	glClearColor(0.1, 0.1, 0.1, 1.0);
 }
 
-int game_run(Game *game)
+int game_run(GameInfo *game_info)
 {
+	Texture *bowser, *checker;
 	vec3 tmp;
 
-	game_init(game);
+	game_init(game_info);
 
-	game->priv->window = SDL_CreateWindow("Game",
+	game_instance.window = SDL_CreateWindow("Game",
 					SDL_WINDOWPOS_UNDEFINED,
 					SDL_WINDOWPOS_UNDEFINED,
-					game->width,
-					game->height,
+					game_instance.width,
+					game_instance.height,
 					SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI);
-	assert(game->priv->window != NULL);
+	assert(game_instance.window != NULL);
 
 	SDL_SetRelativeMouseMode(SDL_TRUE);
 
-	init_gl(game);
+	init_gl();
 
-	Texture *texture = texture_alloc();
-	texture_set_data(texture, bowser_png, sizeof(bowser_png));
-	texture_bind(texture);
 
-	while(game->priv->running) {
-		handle_events(game);
-		glClear(GL_COLOR_BUFFER_BIT);
+	bowser = texture_alloc();
+	texture_set_data(bowser, bowser_png, sizeof(bowser_png));
+
+	checker = texture_alloc();
+	texture_set_data(checker, checkertile_png, sizeof(checkertile_png));
+	glm_scale(floor_obj->model, (vec3){20,1,20});
+	glm_translate(cube->model, (vec3){0.0, 0.5, 0.0});
+
+	while(game_instance.running) {
+		handle_events();
+
+		renderer_clear();
+
 		glm_vec3_add(p.camera_pos, p.camera_front, tmp);
 		glm_lookat(p.camera_pos, tmp, p.camera_up, view);
 		shader_set_mat4(shader, "view", (float *) view);
-		render_object_draw(triangle);
-		SDL_GL_SwapWindow(game->priv->window);
+		glm_rotate(cube->model, glm_rad(0.5), (vec3){0.0, 1.0, 0.0});
+
+		renderer_draw(cube, shader, bowser);
+		renderer_draw(floor_obj, shader, checker);
+
+		SDL_GL_SwapWindow(game_instance.window);
 	}
 
-	render_object_free(triangle);
-	SDL_GL_DeleteContext(game->priv->context);
-	SDL_DestroyWindow(game->priv->window);
+	render_object_free(cube);
+	renderer_destroy();
+	SDL_GL_DeleteContext(game_instance.context);
+	SDL_DestroyWindow(game_instance.window);
 	SDL_Quit();
 
 	return 0;
-}
-
-void game_free(Game *game)
-{
-	free(game->priv);
-	free(game);
 }

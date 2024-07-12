@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "file.h"
-#include "log.h"
+#include "core/file.h"
+#include "core/log.h"
 
 static inline size_t get_size(FILE *f)
 {

@@ -4,7 +4,7 @@
 #include "stb_image.h"
 
 #include "render/texture.h"
-#include "log.h"
+#include "core/log.h"
 
 struct TexturePrivate {
 	unsigned int render_ID;

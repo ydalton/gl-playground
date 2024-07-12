@@ -1,18 +1,15 @@
 #include <stdlib.h>
-#include <stdio.h>
 #include <assert.h>
 
 #include "glad/glad.h"
 
 #include "render/render-object.h"
-#include "render/vertex-array.h"
-#include "render/vertex-buffer.h"
 
-struct RenderObject_ {
-	VertexArray *array;
-	VertexBuffer *buffer;
+struct RenderObjectPrivate {
+	unsigned int vbo;
 
-	unsigned int vertex_count;
+	size_t offset;
+	unsigned int elements;
 };
 
 RenderObject *render_object_alloc(void)
@@ -20,40 +17,50 @@ RenderObject *render_object_alloc(void)
 	RenderObject *obj;
 
 	obj = calloc(1, sizeof(*obj));
-	obj->array = NULL;
+	obj->priv = calloc(1, sizeof(struct RenderObjectPrivate));
+	glm_mat4_copy((mat4)GLM_MAT4_IDENTITY_INIT, obj->model);
 
 	return obj;
 }
 
+static void add_attribute(RenderObject *obj, int count, int stride)
+{
+	glVertexAttribPointer(obj->priv->elements,
+			      count,
+			      GL_FLOAT,
+			      GL_FALSE,
+			      stride,
+			      (void*) obj->priv->offset);
+	glEnableVertexAttribArray(obj->priv->elements);
+	obj->priv->elements++;
+	obj->priv->offset += count * sizeof(float);
+}
+
 void render_object_set_vertex_data(RenderObject *object, float *data, size_t size, size_t stride)
 {
-	assert(!object->array);
-	assert(!object->buffer);
+	unsigned int vao, vbo;
 
-
-	object->array = vertex_array_alloc();
-	object->buffer = vertex_buffer_alloc();
 	object->vertex_count = size/stride;
 
-	vertex_array_bind(object->array);
-	vertex_buffer_set_data(object->buffer, data, size);
-	vertex_array_add_attribute(object->array, 3, stride);
-	vertex_array_add_attribute(object->array, 2, stride);
-	vertex_array_add_attribute(object->array, 3, stride);
+	glGenVertexArrays(1, &vao);
+	glGenBuffers(1, &vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBindVertexArray(vao);
+	glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
 
-	vertex_buffer_unbind();
-	vertex_array_unbind();
+	add_attribute(object, 3, stride);
+	add_attribute(object, 2, stride);
+	add_attribute(object, 3, stride);
+
+	object->vao = vao;
+	object->priv->vbo = vbo;
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
 }
 
 void render_object_free(RenderObject *object)
 {
-	vertex_array_free(object->array);
-	vertex_buffer_free(object->buffer);
-	free(object);
-}
-
-void render_object_draw(RenderObject *object)
-{
-	vertex_array_bind(object->array);
-	glDrawArrays(GL_TRIANGLES, 0, object->vertex_count);
+	glDeleteVertexArrays(1, &object->vao);
+	glDeleteBuffers(1, &object->priv->vbo);
 }

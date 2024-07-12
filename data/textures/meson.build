@@ -1,5 +1,6 @@
 shaders = [
   'bowser.png',
+  'checkertile.png'
 ]
 
 foreach file : shaders

@@ -3,7 +3,7 @@
 
 #include "glad/glad.h"
 #include "render/shader.h"
-#include "log.h"
+#include "core/log.h"
 
 struct _Shader {
 	unsigned int render_ID;
