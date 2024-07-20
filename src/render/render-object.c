@@ -3,7 +3,7 @@
 
 #include "glad/glad.h"
 
-#include "render/render-object.h"
+#include "sephine/render/render-object.h"
 
 struct RenderObjectPrivate {
 	unsigned int vbo;

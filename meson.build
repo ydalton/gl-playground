@@ -1,5 +1,5 @@
 project(
-  'gametest',
+  'sephine',
   'c',
   default_options: [
     'warning_level=3',
@@ -10,7 +10,7 @@ project(
 
 add_global_arguments('-Werror=implicit-function-declaration', language: 'c')
 
-gametest_deps = [
+sephine_deps = [
   dependency('sdl2'),
   dependency('cglm'),
 ]
@@ -18,12 +18,23 @@ gametest_deps = [
 tts = find_program('tts')
 subdir('data')
 
-gametest_sources = files()
+sephine_sources = files()
 subdir('src')
 
-executable(
+include_dirs = include_directories('include', 'include/vendor')
+
+sephine_lib = shared_library(
   meson.project_name(),
-  gametest_sources,
-  dependencies: gametest_deps,
-  include_directories: include_directories('include', 'include/vendor')
+  sephine_sources,
+  c_args: [
+    '-Wl,--gc-sections'
+  ],
+  include_directories: include_dirs,
+  dependencies: sephine_deps,
+  install: true
 )
+
+pkg = import('pkgconfig')
+pkg.generate(sephine_lib)
+
+subdir('examples')

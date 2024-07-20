@@ -1,7 +1,7 @@
 #include "glad/glad.h"
 
-#include "render/renderer.h"
-#include "core/log.h"
+#include "sephine/render/renderer.h"
+#include "sephine/core/log.h"
 
 typedef struct {
 	int initialized;
@@ -15,6 +15,8 @@ int renderer_create(void)
 		WARN("Attempt to call create on an already initialized renderer!\n");
 		return 1;
 	}
+
+	glEnable(GL_DEPTH_TEST);
 
 	return 0;
 }
@@ -33,6 +35,11 @@ void renderer_draw(RenderObject *obj, Shader *shader, Texture *texture)
 
 	glBindVertexArray(obj->vao);
 	glDrawArrays(GL_TRIANGLES, 0, obj->vertex_count);
+}
+
+void renderer_set_clear_color(float r, float g, float b, float a)
+{
+	glClearColor(r, g, b, a);
 }
 
 void renderer_destroy(void)

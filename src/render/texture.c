@@ -3,8 +3,8 @@
 #include "glad/glad.h"
 #include "stb_image.h"
 
-#include "render/texture.h"
-#include "core/log.h"
+#include "sephine/render/texture.h"
+#include "sephine/core/log.h"
 
 struct TexturePrivate {
 	unsigned int render_ID;

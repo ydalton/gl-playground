@@ -2,8 +2,8 @@
 #include <assert.h>
 
 #include "glad/glad.h"
-#include "render/shader.h"
-#include "core/log.h"
+#include "sephine/render/shader.h"
+#include "sephine/core/log.h"
 
 struct _Shader {
 	unsigned int render_ID;

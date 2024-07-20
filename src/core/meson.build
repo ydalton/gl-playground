@@ -1,4 +1,3 @@
-gametest_sources += files(
+sephine_sources += files(
   'game.c',
-  'file.c',
 )
